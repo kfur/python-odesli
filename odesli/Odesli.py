@@ -19,7 +19,7 @@ class Odesli():
         if not self.key == None:
             params['key'] = self.key
         if session:
-            async with _session.get(f'{ROOT}/{LINKS_ENDPOINT}', params=params) as resp:
+            async with session.get(f'{ROOT}/{LINKS_ENDPOINT}', params=params) as resp:
                 resp.raise_for_status()                 
                 result = await resp.json()    
         else:
