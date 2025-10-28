@@ -1,4 +1,4 @@
-import requests
+import aiohttp
 import json
 
 from .entity.song.SongResult import SongResult
@@ -14,12 +14,19 @@ class Odesli():
     def __init__(self, key=None):
         self.key = key
 
-    def __get(self, params) -> EntityResult:
+
+    async def __get(self, params, session=None) -> EntityResult:
         if not self.key == None:
             params['key'] = self.key
-        requestResult = requests.get(f'{ROOT}/{LINKS_ENDPOINT}', params=params)
-        requestResult.raise_for_status()
-        result = json.loads(requestResult.content.decode())
+        if session:
+            async with _session.get(f'{ROOT}/{LINKS_ENDPOINT}', params=params) as resp:
+                resp.raise_for_status()                 
+                result = await resp.json()    
+        else:
+            async with aiohttp.ClientSession() as _session:
+                async with _session.get(f'{ROOT}/{LINKS_ENDPOINT}', params=params) as resp:
+                    resp.raise_for_status()
+                    result = await resp.json()
         resultType = next(iter(result['entitiesByUniqueId'].values()))['type']
         if resultType == 'song':
             return SongResult.parse(result)
@@ -29,12 +36,13 @@ class Odesli():
             raise NotImplementedError(f'Entities with type {resultType} are not supported yet.')
 
 
-    def getByUrl(self, url) -> EntityResult:
-        return self.__get({ 'url': url })
+    async def getByUrl(self, url, session=None) -> EntityResult:
+        return await self.__get({ 'url': url }, session)
 
-    def getById(self, id, platform, type) -> EntityResult:
-        return self.__get({
+    async def getById(self, id, platform, type, session=None) -> EntityResult:
+        return await self.__get({
             'id': id,
             'platform': platform,
             'type': type
-        })
+        }, session)
+
